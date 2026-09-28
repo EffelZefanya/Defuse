@@ -26,6 +26,8 @@ The team wins by defusing the goal number of bombs. If any fuse reaches 0, every
 | Cards in hand | 5 | 5 | 4 |
 | Max bombs on table | 4 | 4 | 5 |
 
+Bigger targets burn longer: a bomb gets +1 fuse for every 3 points its target sits above the lowest target in the range. On Normal, a target-10 bomb starts at 12 and a target-17 bomb starts at 14.
+
 ## Modifiers
 
 - **Action cards**: Wild (any bomb, you pick 1–6), Swap (trade a card with a teammate), Freeze (stop the clock for 2 ticks).
