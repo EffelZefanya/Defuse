@@ -1,0 +1,809 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Defuse</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Stencil+Display:wght@700;900&family=Barlow:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* base reset (was supplied by the artifact host) */
+html{-webkit-text-size-adjust:100%}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+
+:root{
+  color-scheme:dark;
+  --bg:#0e1920; --panel:#14242e; --panel2:#1a2e3a; --line:#294453; --line2:#35566a;
+  --ink:#e7eef1; --muted:#8ea5b1; --faint:#5e7886;
+  --haz:#f2a93b; --haz-ink:#1b1305;
+  --red:#e4533f; --blue:#3f8ae0; --green:#2fa36a; --yellow:#e8c13b;
+  --good:#5fd49a; --bad:#ff6a57;
+  --led-bg:#1a0806; --led:#ff5b45;
+  --display:'Big Shoulders Stencil Display','Impact','Arial Narrow',sans-serif;
+  --body:'Barlow',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,label:focus-within{outline:2px solid var(--haz);outline-offset:2px}
+#app{max-width:1080px;margin:0 auto;padding-inline:16px;padding-block:0 48px}
+h1,h2,h3{text-wrap:balance;margin:0}
+.eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--haz);font-weight:600;margin:0 0 8px}
+.lbl{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600}
+
+/* hazard tape */
+.tape{height:14px;margin-inline:-16px;background:repeating-linear-gradient(-45deg,var(--haz) 0 18px,#141414 18px 36px)}
+
+/* hero */
+.hero-in{display:grid;grid-template-columns:1.3fr 1fr;gap:32px;align-items:center;padding-block:36px 28px}
+.hero h1{font-family:var(--display);font-weight:900;font-size:clamp(72px,14vw,148px);line-height:.85;letter-spacing:.02em;color:var(--ink)}
+.lede{max-width:56ch;color:var(--muted);font-size:17px;margin:16px 0 0}
+.hero-demo{display:flex;flex-direction:column;align-items:center;gap:14px}
+.hero-demo .bomb{width:210px}
+.demo-hand{display:flex;gap:8px}
+.demo-note{font-size:13px;color:var(--muted);text-align:center;max-width:30ch;margin:0}
+
+/* setup */
+.setup{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.panel h2{font-family:var(--display);font-weight:700;font-size:26px;letter-spacing:.03em}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{background:var(--panel2);border:1px solid var(--line2);border-radius:6px;padding:8px 14px;font-weight:600;min-width:44px}
+.seg button[aria-pressed="true"]{background:var(--haz);color:var(--haz-ink);border-color:var(--haz)}
+.names{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.names input{width:100%;background:var(--bg);border:1px solid var(--line2);border-radius:6px;padding:9px 10px;color:var(--ink);font:inherit}
+.diff-note{margin:0;color:var(--muted);font-size:14px;font-variant-numeric:tabular-nums}
+.toggles{display:flex;flex-direction:column;gap:6px}
+.tog{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start;padding:10px;border-radius:8px;border:1px solid transparent;cursor:pointer}
+.tog:hover{border-color:var(--line)}
+.tog input{appearance:none;width:38px;height:22px;border-radius:11px;background:var(--line);position:relative;margin:2px 0 0;cursor:pointer;transition:background .15s}
+.tog input::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--ink);transition:transform .15s}
+.tog input:checked{background:var(--haz)}
+.tog input:checked::after{transform:translateX(16px);background:var(--haz-ink)}
+.tog b{display:block;font-weight:600}
+.tog span{color:var(--muted);font-size:14px}
+.rules ol{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px;max-width:62ch}
+.rules p{margin:0;color:var(--muted)}
+.start-row{grid-column:1/-1;display:flex;justify-content:flex-end}
+.btn{background:var(--panel2);border:1px solid var(--line2);border-radius:8px;padding:10px 16px;font-weight:600}
+.btn:hover:not(:disabled){border-color:var(--muted)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.primary{background:var(--haz);color:var(--haz-ink);border-color:var(--haz);font-family:var(--display);font-size:24px;letter-spacing:.06em;padding:10px 28px}
+.btn.primary:hover{filter:brightness(1.08)}
+
+/* cards */
+.card{--c:var(--line);--ct:#fff;position:relative;width:64px;height:92px;flex:0 0 auto;border-radius:10px;background:var(--c);color:var(--ct);border:3px solid #f4f1e8;box-shadow:0 2px 0 rgba(0,0,0,.35);display:grid;place-items:center;padding:0;transition:transform .12s}
+.card::before{content:"";position:absolute;inset:14px 6px;border-radius:50%;background:rgba(255,255,255,.18);transform:rotate(-24deg)}
+.card .v{position:relative;font-family:var(--display);font-weight:900;font-size:40px;line-height:1}
+.card .s{position:absolute;top:3px;left:6px;font-size:11px;line-height:1}
+.card .s2{position:absolute;bottom:3px;right:6px;font-size:11px;line-height:1}
+.card .t{position:relative;font-family:var(--display);font-weight:700;font-size:14px;letter-spacing:.06em}
+.card.red{--c:var(--red)} .card.blue{--c:var(--blue)} .card.green{--c:var(--green)} .card.yellow{--c:var(--yellow);--ct:#231d06}
+.card.wild{background:conic-gradient(var(--red) 0 25%,var(--blue) 0 50%,var(--yellow) 0 75%,var(--green) 0)}
+.card.wild::before{background:#111;inset:18px 8px;opacity:.85}
+.card.swap,.card.freeze{--c:#202a31}
+.card.freeze .v,.card.swap .v{font-size:30px;color:var(--haz)}
+.card.freeze::before,.card.swap::before{background:rgba(242,169,59,.12)}
+.hand .card:hover{transform:translateY(-4px)}
+.card.sel{transform:translateY(-12px)!important;box-shadow:0 0 0 3px var(--haz),0 8px 18px rgba(0,0,0,.5)}
+.card.mini{width:34px;height:48px;border-width:2px;border-radius:6px;cursor:default}
+.card.mini .v{font-size:20px}
+.card.mini .t{font-size:9px}
+.card.mini .s,.card.mini .s2{display:none}
+.card.mini::before{inset:8px 3px}
+.card.mini.freeze .v,.card.mini.swap .v{font-size:18px}
+.card.mini.freeze .t,.card.mini.swap .t{display:none}
+
+/* bombs */
+.bomb{--c:var(--line);background:var(--panel2);border:1px solid var(--line2);border-radius:10px;overflow:hidden;display:flex;flex-direction:column;text-align:left;padding:0;width:100%;transition:opacity .15s,box-shadow .15s,transform .15s}
+.bomb.red{--c:var(--red)} .bomb.blue{--c:var(--blue)} .bomb.green{--c:var(--green)} .bomb.yellow{--c:var(--yellow)}
+.bomb .band{background:var(--c);color:#fff;display:flex;justify-content:space-between;align-items:center;padding:6px 12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:12px}
+.bomb.yellow .band{color:#231d06}
+.bomb .body{padding:12px;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end}
+.bomb .tot{font-family:var(--display);font-weight:900;font-size:44px;line-height:.9;font-variant-numeric:tabular-nums}
+.bomb .tot small{font-size:22px;color:var(--muted);font-weight:700}
+.bomb .need{font-size:13px;color:var(--muted);margin-top:4px}
+.bomb .bar{grid-column:1/-1;height:6px;border-radius:3px;background:var(--bg);overflow:hidden}
+.bomb .bar i{display:block;height:100%;background:var(--c)}
+.led{background:var(--led-bg);border:1px solid #3a1511;border-radius:6px;padding:4px 8px;text-align:center;min-width:62px}
+.led b{display:block;font-family:var(--mono);font-weight:700;font-size:26px;color:var(--led);line-height:1.1;font-variant-numeric:tabular-nums;text-shadow:0 0 8px rgba(255,91,69,.55)}
+.led span{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:#c9776b}
+.bomb.urgent .led{border-color:var(--bad)}
+.bomb.urgent .led b{animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:.35}}
+.bomb.valid{box-shadow:0 0 0 3px var(--haz);cursor:pointer}
+.bomb.valid:hover{transform:translateY(-2px)}
+.bomb.dim{opacity:.4}
+.bomb.locked .band::after{content:"LOCKED";background:#111;color:var(--haz);padding:1px 6px;border-radius:3px;font-size:10px}
+.bomb.fresh{animation:drop .4s ease-out}
+@keyframes drop{from{transform:translateY(-10px);opacity:.3}}
+.bombs{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
+.empty-note{color:var(--muted);margin:0}
+
+/* game hud */
+.hud{display:flex;flex-wrap:wrap;align-items:center;gap:10px 22px;padding-block:14px}
+.hud-brand{font-family:var(--display);font-weight:900;font-size:34px;letter-spacing:.04em;line-height:1;margin-right:auto}
+.stat{display:flex;flex-direction:column;gap:2px}
+.stat b{font-family:var(--mono);font-size:18px;font-variant-numeric:tabular-nums}
+.pips{display:flex;gap:4px;align-items:center;height:26px}
+.pips i{width:10px;height:18px;border-radius:2px;background:var(--line)}
+.pips i.on{background:var(--good)}
+.hud-btns{display:flex;gap:8px}
+.hud-btns .btn{padding:6px 12px;font-size:14px}
+.banner{border:1px dashed var(--haz);color:var(--haz);border-radius:8px;padding:8px 12px;font-size:14px;margin-bottom:12px}
+.banner.event{border-style:solid;background:rgba(242,169,59,.08);color:var(--ink)}
+.banner.event b{color:var(--haz)}
+.game{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px;align-items:start}
+.main-col{display:flex;flex-direction:column;gap:16px;min-width:0}
+.section-h{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:10px}
+.section-h h2{font-family:var(--display);font-weight:700;font-size:24px;letter-spacing:.03em}
+.turn{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.turn-head{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+.turn-head h2{font-family:var(--display);font-weight:900;font-size:30px;letter-spacing:.03em;margin-right:auto}
+.chip{font-size:13px;border:1px solid var(--line2);border-radius:999px;padding:3px 10px;color:var(--muted);font-variant-numeric:tabular-nums}
+.chip.role{border-color:var(--haz);color:var(--ink);background:transparent}
+button.chip.role:hover:not(:disabled){background:rgba(242,169,59,.12)}
+.chip.role:disabled{opacity:.45;cursor:not-allowed;border-color:var(--line2)}
+.hint{margin:0;color:var(--muted)}
+.hint strong{color:var(--ink);font-weight:600}
+.hand{display:flex;gap:10px;overflow-x:auto;padding-block:16px 6px;padding-inline:2px}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.side{display:flex;flex-direction:column;gap:16px}
+.team{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.mate{display:flex;flex-direction:column;gap:6px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.mate:last-child{border-bottom:0;padding-bottom:0}
+.mate-h{display:flex;justify-content:space-between;gap:8px;font-weight:600}
+.mate-h span{font-weight:400;color:var(--muted);font-size:13px}
+.mini-hand{display:flex;flex-wrap:wrap;gap:4px}
+.log{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;max-height:320px;overflow:auto}
+.log ol{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.log li{color:var(--muted)}
+.log li.good{color:var(--good)} .log li.bad{color:var(--bad)} .log li.ev{color:var(--haz)}
+.log li .tn{font-family:var(--mono);font-size:11px;color:var(--faint);margin-right:6px}
+
+/* overlays */
+.overlay{position:fixed;inset:0;background:rgba(6,11,15,.86);display:grid;place-items:center;padding:16px;z-index:10;overflow:auto}
+.modal{background:var(--panel);border:1px solid var(--line2);border-radius:12px;padding:22px;max-width:460px;width:100%;display:flex;flex-direction:column;gap:14px}
+.modal h2{font-family:var(--display);font-weight:900;font-size:34px;letter-spacing:.03em;line-height:1}
+.modal p{margin:0;color:var(--muted)}
+.modal .row{display:flex;flex-wrap:wrap;gap:8px}
+.modal .row .btn{min-width:48px}
+.modal.big{text-align:center;align-items:center}
+.modal.big h2{font-size:56px}
+.modal .tape{margin-inline:0;width:100%;border-radius:3px}
+.win h2{color:var(--good)} .lose h2{color:var(--bad)}
+.colorbtn{width:52px;height:52px;border-radius:8px;border:3px solid #f4f1e8}
+.modal.rules-m{max-width:620px}
+.modal.rules-m ol,.modal.rules-m ul{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px}
+
+/* guide page */
+#guide{position:fixed;inset:0;z-index:20;background:var(--bg);overflow:auto;padding-inline:16px;padding-block:env(safe-area-inset-top,0px) calc(48px + env(safe-area-inset-bottom,0px))}
+.guide-in{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:32px}
+.guide-top{position:sticky;top:0;z-index:1;background:var(--bg);display:flex;justify-content:space-between;align-items:center;gap:12px;padding-block:14px;border-bottom:1px solid var(--line)}
+.guide-top h1{font-family:var(--display);font-weight:900;font-size:clamp(34px,6vw,52px);line-height:.95;letter-spacing:.03em}
+.guide-intro{margin:0;color:var(--muted);max-width:62ch;font-size:16px}
+.gsec{display:flex;flex-direction:column;gap:14px}
+.gsec>h2{font-family:var(--display);font-weight:700;font-size:30px;letter-spacing:.03em}
+.gsec>p{margin:0;color:var(--muted);max-width:66ch}
+.ggrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.gcard{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.gcard-h{display:flex;align-items:center;gap:12px}
+.gcard-h h3{font-family:var(--display);font-weight:700;font-size:24px;letter-spacing:.03em;line-height:1}
+.gcard-h .count{margin-left:auto;font-family:var(--mono);font-size:13px;color:var(--muted)}
+.badge{width:40px;height:40px;flex:0 0 auto;border-radius:8px;background:var(--haz);color:var(--haz-ink);display:grid;place-items:center;font-family:var(--display);font-weight:900;font-size:24px}
+.gcard p{margin:0}
+.gcard .power{font-weight:600}
+.gcard .when{color:var(--muted);font-size:14px}
+.gcard .when b{color:var(--ink);font-weight:600}
+.facts{margin:0;padding-left:20px;color:var(--muted);font-size:14px;display:flex;flex-direction:column;gap:4px}
+.ev-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px 16px;margin:0;padding:0;list-style:none}
+.ev-list li{border-left:3px solid var(--haz);padding:6px 12px;background:var(--panel)}
+.ev-list b{display:block}
+.ev-list span{color:var(--muted);font-size:14px}
+.guide-link{align-self:flex-start;background:none;border:0;padding:0;color:var(--haz);font-weight:600;text-decoration:underline;text-underline-offset:3px}
+
+@media (max-width:820px){
+  .hero-in{grid-template-columns:1fr}
+  .setup{grid-template-columns:1fr}
+  .game{grid-template-columns:1fr}
+  .hud-brand{font-size:28px}
+}
+@media (max-width:440px){
+  .card{width:56px;height:82px}
+  .card .v{font-size:34px}
+  .bombs{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .bomb .body{grid-template-columns:1fr;gap:8px}
+  .bomb .tot{font-size:36px}
+  .names{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="guide" hidden></div>
+
+<script>
+(function(){
+const COLORS={red:{name:'Red',sym:'◆'},blue:{name:'Blue',sym:'●'},green:{name:'Green',sym:'▲'},yellow:{name:'Yellow',sym:'■'}};
+const CKEYS=Object.keys(COLORS);
+const DIFF={
+  easy:{label:'Easy',fuse:14,spawn:5,goal:6,tmin:8,tmax:14,hand:5,max:4},
+  normal:{label:'Normal',fuse:12,spawn:4,goal:8,tmin:10,tmax:17,hand:5,max:4},
+  nightmare:{label:'Nightmare',fuse:10,spawn:3,goal:10,tmin:12,tmax:20,hand:4,max:5}
+};
+const ROLES={
+  engineer:{name:'Engineer',desc:'Play 2 cards this turn.'},
+  cooler:{name:'Cooler',desc:'Add 3 to one bomb’s fuse.'},
+  tinker:{name:'Tinker',desc:'Rewire one bomb to a different colour.'},
+  recycler:{name:'Recycler',desc:'Throw away your hand and draw a fresh one.'},
+  surgeon:{name:'Surgeon',desc:'This turn, number cards fit bombs of any colour.'},
+  clockmaker:{name:'Clockmaker',desc:'Stop the clock for the next 2 ticks.'}
+};
+const ROLE_GUIDE={
+  engineer:{when:'Two bombs each need one more card, or one bomb needs two cards and you hold both.',note:'Use it before your first play. It gives you one extra play this turn.'},
+  cooler:{when:'A bomb is down to 1–2 fuse and nobody holds the card to finish it yet.',note:'Adding fuse doesn’t use your play. You still play a card after.'},
+  tinker:{when:'The team keeps drawing the right number in the wrong colour.',note:'The bomb keeps its total and fuse. Only the colour changes. Rewiring a locked bomb unlocks it.'},
+  recycler:{when:'Nothing in your hand matches anything on the table.',note:'Your old cards go to the discard pile. You still get your normal play afterwards.'},
+  surgeon:{when:'You hold the exact number a bomb needs, but in the wrong colour.',note:'Lasts until the end of your turn. Locked bombs and Shaky hands still apply.'},
+  clockmaker:{when:'Several bombs are low on fuse at the same time.',note:'Stacks with Freeze cards and the Calm event.'}
+};
+const CARD_GUIDE=[
+  {card:{kind:'wild'},name:'Wild',count:'×4',power:'Plays on a bomb of any colour. You choose its value from 1 to 6.',when:'Save it to finish a bomb. When you pick the value, the exact number the bomb needs is highlighted.',facts:['Counts as your play.','Can’t go on a locked bomb.']},
+  {card:{kind:'swap'},name:'Swap',count:'×3',power:'Pick a teammate. Give them one card from your hand and take a random card from theirs.',when:'Hand off a card that fits a bomb better for them, especially if they play right after you.',facts:['Counts as your play.','The card you take is random, even when hands are open.']},
+  {card:{kind:'freeze'},name:'Freeze',count:'×3',power:'Stops the clock for the next 2 ticks. No fuses burn during those turns.',when:'Play it when a bomb is about to blow and nobody can finish it this round.',facts:['Counts as your play.','Stacks: two Freezes stop the clock for 4 ticks.']}
+];
+const EVENT_GUIDE=[
+  ['Lockdown','One colour is locked. No cards can go on bombs of that colour.'],
+  ['Shaky hands','Only number cards 1–5 can be played. Wilds still work.'],
+  ['Steady hands','Going over a target bounces the card back instead of jamming the bomb.'],
+  ['Aftershock','Every bomb loses 2 fuse right away (never below 1).'],
+  ['Calm','The clock stops for the next 2 ticks.'],
+  ['Adrenaline','Each defuse adds 2 fuse to every other bomb.'],
+  ['Quiet shift','No twist this time.']
+];
+const TOGGLES=[
+  ['actions','Action cards','Adds Wild (any bomb, you pick 1–6), Swap (trade a card with a teammate) and Freeze (stop the clock for 2 ticks).'],
+  ['roles','Roles','Each player gets a special power they can use once per game.'],
+  ['events','Event deck','Every new bomb flips a twist, like a locked colour or shaky hands.'],
+  ['hidden','Hidden hands','Only the current player sees their cards. Pass the device between turns.'],
+  ['silent','Silent mode','No saying the colours or numbers in your hand. Pointing at bombs is fine.']
+];
+
+let setup={n:4,names:['Ayu','Budi','Citra','Dimas','Eka','Fajar'],diff:'normal',actions:true,roles:false,events:false,hidden:false,silent:false};
+let S=null;
+let UI={sel:null,pending:null,modal:null};
+const app=document.getElementById('app');
+
+const rnd=n=>Math.floor(Math.random()*n);
+const pick=a=>a[rnd(a.length)];
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a}
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---------- rendering helpers ---------- */
+function cardHTML(c,opts={}){
+  const mini=opts.mini?' mini':'';
+  const sel=opts.sel?' sel':'';
+  const tag=opts.mini||opts.static?'div':'button';
+  const act=tag==='button'?` data-act="card" data-id="${c.id}"`:'';
+  if(c.kind==='num'){
+    const s=COLORS[c.color].sym;
+    return `<${tag} class="card ${c.color}${mini}${sel}"${act} aria-label="${COLORS[c.color].name} ${c.value}"><span class="s">${s}</span><span class="v">${c.value}</span><span class="s2">${s}</span></${tag}>`;
+  }
+  if(c.kind==='wild') return `<${tag} class="card wild${mini}${sel}"${act} aria-label="Wild"><span class="t" style="color:#fff">WILD</span></${tag}>`;
+  if(c.kind==='swap') return `<${tag} class="card swap${mini}${sel}"${act} aria-label="Swap"><span class="v">⇄</span><span class="t" style="position:absolute;bottom:6px;color:var(--haz)">SWAP</span></${tag}>`;
+  return `<${tag} class="card freeze${mini}${sel}"${act} aria-label="Freeze"><span class="v">✱</span><span class="t" style="position:absolute;bottom:6px;color:var(--haz)">FREEZE</span></${tag}>`;
+}
+function bombHTML(b,opts={}){
+  const col=COLORS[b.color];
+  const cls=['bomb',b.color];
+  if(b.fuse<=3) cls.push('urgent');
+  if(opts.valid) cls.push('valid');
+  if(opts.dim) cls.push('dim');
+  if(opts.locked) cls.push('locked');
+  if(opts.fresh) cls.push('fresh');
+  const need=b.target-b.total;
+  const pct=Math.min(100,Math.round(b.total/b.target*100));
+  const tag=opts.demo?'div':'button';
+  const act=opts.demo?'':` data-act="bomb" data-id="${b.id}"`;
+  return `<${tag} class="${cls.join(' ')}"${act} aria-label="${col.name} bomb, ${b.total} of ${b.target}, fuse ${b.fuse}">
+    <div class="band"><span>${col.sym} ${col.name}</span><span>Target ${b.target}</span></div>
+    <div class="body">
+      <div><div class="tot">${b.total}<small> / ${b.target}</small></div><div class="need">needs exactly ${need}</div></div>
+      <div class="led"><b>${String(Math.max(0,b.fuse)).padStart(2,'0')}</b><span>fuse</span></div>
+      <div class="bar"><i style="width:${pct}%"></i></div>
+    </div></${tag}>`;
+}
+
+/* ---------- setup screen ---------- */
+function renderSetup(){
+  const d=DIFF[setup.diff];
+  app.innerHTML=`
+  <header class="hero">
+    <div class="tape"></div>
+    <div class="hero-in">
+      <div>
+        <p class="eyebrow">Co-op card game · 2–6 players · one screen</p>
+        <h1>DEFUSE</h1>
+        <p class="lede">Bombs land on the table, each with a colour and a target number. Play matching cards to hit the target exactly before the fuse burns out. Defuse enough of them together and the whole team wins.</p>
+      </div>
+      <div class="hero-demo" aria-hidden="true">
+        ${bombHTML({id:0,color:'blue',target:15,total:9,fuse:4},{demo:true})}
+        <div class="demo-hand">${cardHTML({kind:'num',color:'blue',value:6},{static:true})}${cardHTML({kind:'num',color:'blue',value:8},{static:true})}${cardHTML({kind:'num',color:'red',value:6},{static:true})}</div>
+        <p class="demo-note">Blue 6 defuses it. Blue 8 overshoots and jams it. Red 6 won’t fit.</p>
+      </div>
+    </div>
+  </header>
+  <main class="setup">
+    <section class="panel">
+      <h2>Crew</h2>
+      <div><div class="lbl">Players</div>
+      <div class="seg" role="group" aria-label="Number of players" style="margin-top:6px">
+        ${[2,3,4,5,6].map(n=>`<button data-act="setN" data-v="${n}" aria-pressed="${setup.n===n}">${n}</button>`).join('')}
+      </div></div>
+      <div class="names">
+        ${Array.from({length:setup.n},(_,i)=>`<input id="name-${i}" data-name="${i}" value="${esc(setup.names[i])}" maxlength="14" aria-label="Player ${i+1} name">`).join('')}
+      </div>
+    </section>
+    <section class="panel">
+      <h2>Difficulty</h2>
+      <div class="seg" role="group" aria-label="Difficulty">
+        ${Object.keys(DIFF).map(k=>`<button data-act="diff" data-v="${k}" aria-pressed="${setup.diff===k}">${DIFF[k].label}</button>`).join('')}
+      </div>
+      <p class="diff-note">Defuse <b>${d.goal}</b> bombs · fuses start near <b>${d.fuse}</b> · a new bomb every <b>${d.spawn}</b> turns · targets ${d.tmin}–${d.tmax} · ${d.hand} cards in hand</p>
+      <div class="lbl">Modifiers</div>
+      <div class="toggles">
+        ${TOGGLES.map(([k,t,s])=>`<label class="tog" for="tog-${k}"><input type="checkbox" id="tog-${k}" data-tog="${k}" ${setup[k]?'checked':''}><div><b>${t}</b><span>${s}</span></div></label>`).join('')}
+      </div>
+      <button class="guide-link" data-act="guide">Read the guide to roles, action cards and events</button>
+    </section>
+    <section class="panel rules" style="grid-column:1/-1">
+      <h2>How a turn works</h2>
+      ${rulesList()}
+    </section>
+    <div class="start-row"><button class="btn primary" data-act="start">Start the shift</button></div>
+  </main>`;
+}
+function rulesList(){
+  return `<ol>
+    <li>Pick a card from your hand, then tap a bomb of the <strong>same colour</strong>. The card’s number adds to that bomb’s total.</li>
+    <li>Hit the target <strong>exactly</strong> and the bomb is defused. Go over and it jams: the total drops back to 0 and the fuse loses 1.</li>
+    <li>No good play? Discard a card to draw a new one. That uses your turn.</li>
+    <li>After every turn the clock ticks and every fuse drops by 1. New bombs arrive every few turns.</li>
+  </ol>
+  <p>The team wins by defusing the goal number of bombs. If any fuse reaches 0, everyone loses. Talk it over: “I’ll take red, can you finish blue?”</p>`;
+}
+
+/* ---------- game setup ---------- */
+function makeDeck(cfg){
+  let id=1,deck=[];
+  for(const c of CKEYS) for(let v=1;v<=9;v++) for(let k=0;k<2;k++) deck.push({id:id++,kind:'num',color:c,value:v});
+  if(cfg.actions){
+    for(let k=0;k<4;k++) deck.push({id:id++,kind:'wild'});
+    for(let k=0;k<3;k++) deck.push({id:id++,kind:'swap'});
+    for(let k=0;k<3;k++) deck.push({id:id++,kind:'freeze'});
+  }
+  return shuffle(deck);
+}
+function startGame(){
+  const cfg=Object.assign({},DIFF[setup.diff],{actions:setup.actions,roles:setup.roles,events:setup.events,hidden:setup.hidden,silent:setup.silent,diff:setup.diff});
+  const roleKeys=shuffle(Object.keys(ROLES));
+  S={cfg,deck:makeDeck(cfg),discard:[],bombs:[],bombId:1,defused:0,goal:cfg.goal,turn:1,spawnIn:cfg.spawn,event:null,freeze:0,over:null,log:[],cur:0,playsLeft:1,anyColor:false,fresh:[],
+     players:Array.from({length:setup.n},(_,i)=>({name:(setup.names[i]||'').trim()||`Player ${i+1}`,hand:[],role:cfg.roles?roleKeys[i%roleKeys.length]:null,roleUsed:false})),
+     phase:cfg.hidden?'pass':'play'};
+  S.players.forEach(p=>drawTo(p,cfg.hand));
+  spawnBomb();spawnBomb();
+  log(`Shift started. ${S.players.length} players, ${cfg.label}. Defuse ${S.goal} bombs.`,'ev');
+  UI={sel:null,pending:null,modal:null};
+  renderGame();
+  window.scrollTo(0,0);
+}
+function drawTo(p,n){
+  for(let i=0;i<n;i++){
+    if(!S.deck.length){
+      if(!S.discard.length) return;
+      S.deck=shuffle(S.discard);S.discard=[];
+      log('The discard pile was shuffled into a new deck.');
+    }
+    p.hand.push(S.deck.pop());
+  }
+}
+function refill(p){ if(p.hand.length<S.cfg.hand) drawTo(p,S.cfg.hand-p.hand.length); }
+function spawnBomb(){
+  const cfg=S.cfg;
+  const target=cfg.tmin+rnd(cfg.tmax-cfg.tmin+1);
+  const b={id:S.bombId++,color:pick(CKEYS),target,total:0,fuse:cfg.fuse+Math.floor((target-cfg.tmin)/3)};
+  S.bombs.push(b);S.fresh.push(b.id);
+  return b;
+}
+function log(text,cls=''){ S.log.unshift({t:S.turn,text,cls}); if(S.log.length>40) S.log.pop(); }
+const curP=()=>S.players[S.cur];
+const cn=c=>COLORS[c].name;
+
+/* ---------- events ---------- */
+function flipEvent(){
+  const opts=['lock','low','steady','aftershock','calm','adrenaline','quiet','quiet'];
+  const id=pick(opts);
+  let ev={id};
+  if(id==='lock'){
+    const present=[...new Set(S.bombs.map(b=>b.color))];
+    ev.color=pick(present.length>1?present:CKEYS);
+    ev.text=`${cn(ev.color)} lockdown: nobody can play on ${cn(ev.color).toLowerCase()} bombs until the next bomb arrives.`;
+  }
+  if(id==='low') ev.text='Shaky hands: only number cards 1–5 can be played until the next bomb arrives.';
+  if(id==='steady') ev.text='Steady hands: going over a target bounces the card instead of jamming the bomb.';
+  if(id==='aftershock'){ S.bombs.forEach(b=>b.fuse=Math.max(1,b.fuse-2)); ev.text='Aftershock: every bomb lost 2 fuse.'; }
+  if(id==='calm'){ S.freeze+=2; ev.text='Calm: the clock stops for the next 2 ticks.'; }
+  if(id==='adrenaline') ev.text='Adrenaline: each defuse adds 2 fuse to every other bomb.';
+  if(id==='quiet') ev.text='Quiet shift: no twist this time.';
+  S.event=ev;
+  log('Event · '+ev.text,'ev');
+}
+const ev=id=>S.event&&S.event.id===id;
+
+/* ---------- rules checks ---------- */
+function isLocked(b){ return ev('lock')&&S.event.color===b.color; }
+function canPlay(card,b){
+  if(isLocked(b)) return false;
+  if(card.kind==='wild') return true;
+  if(card.kind!=='num') return false;
+  if(ev('low')&&card.value>5) return false;
+  return card.color===b.color||S.anyColor;
+}
+function takeCard(id){
+  const p=curP();const i=p.hand.findIndex(c=>c.id===id);
+  if(i<0) return null;
+  return p.hand.splice(i,1)[0];
+}
+
+/* ---------- actions ---------- */
+function playOnBomb(cardId,bombId,value){
+  const p=curP();const b=S.bombs.find(x=>x.id===bombId);
+  const card=takeCard(cardId); if(!card||!b) return;
+  S.discard.push(card);
+  const label=card.kind==='wild'?`a Wild (${value})`:`a ${value}`;
+  const sum=b.total+value;
+  if(sum===b.target){
+    S.bombs=S.bombs.filter(x=>x!==b);S.defused++;
+    log(`${p.name} defused the ${cn(b.color).toLowerCase()} ${b.target} bomb with ${label}.`,'good');
+    if(ev('adrenaline')&&S.bombs.length){ S.bombs.forEach(x=>x.fuse+=2); log('Adrenaline: every other bomb gained 2 fuse.','ev'); }
+    if(S.defused>=S.goal){ S.over={win:true}; UI.sel=null; renderGame(); return; }
+    if(!S.bombs.length){ const nb=spawnBomb(); S.spawnIn=S.cfg.spawn; log(`Table cleared. A ${cn(nb.color).toLowerCase()} ${nb.target} bomb dropped in.`,'ev'); }
+  } else if(sum>b.target){
+    if(ev('steady')){
+      log(`${p.name}’s ${value} would overshoot ${b.target}. Steady hands: the card bounced off.`);
+    } else {
+      b.total=0;b.fuse-=1;
+      log(`${p.name} played ${label} on ${cn(b.color).toLowerCase()} and overshot ${b.target}. Jammed: total back to 0, fuse −1.`,'bad');
+      if(b.fuse<=0){ lose(b); return; }
+    }
+  } else {
+    b.total=sum;
+    log(`${p.name} added ${label} to ${cn(b.color).toLowerCase()} (${b.total}/${b.target}).`);
+  }
+  drawTo(p,1);
+  afterAction();
+}
+function afterAction(){
+  UI.sel=null;UI.pending=null;UI.modal=null;
+  S.playsLeft--;
+  if(S.playsLeft<=0) endTurn(); else renderGame();
+}
+function lose(b){
+  S.over={win:false,reason:`The ${cn(b.color).toLowerCase()} ${b.target} bomb went off.`};
+  log(`BOOM. The ${cn(b.color).toLowerCase()} bomb went off.`,'bad');
+  UI.sel=null;renderGame();
+}
+function endTurn(){
+  const p=curP();refill(p);
+  S.fresh=[];
+  if(S.freeze>0){ S.freeze--; log('Clock frozen. No fuse burned this turn.','ev'); }
+  else {
+    S.bombs.forEach(b=>b.fuse--);
+    const boom=S.bombs.find(b=>b.fuse<=0);
+    if(boom){ lose(boom); return; }
+  }
+  S.spawnIn--;
+  if(S.spawnIn<=0){
+    if(S.bombs.length<S.cfg.max){
+      const nb=spawnBomb();S.spawnIn=S.cfg.spawn;
+      log(`A new ${cn(nb.color).toLowerCase()} bomb landed. Target ${nb.target}, fuse ${nb.fuse}.`,'ev');
+      if(S.cfg.events) flipEvent();
+    } else { S.spawnIn=1; log('The table is full. The next bomb waits for space.'); }
+  }
+  S.cur=(S.cur+1)%S.players.length;S.turn++;
+  S.playsLeft=1;S.anyColor=false;
+  UI={sel:null,pending:null,modal:null};
+  if(S.cfg.hidden) S.phase='pass';
+  renderGame();
+}
+function discardSelected(){
+  const p=curP();const card=takeCard(UI.sel); if(!card) return;
+  S.discard.push(card);
+  log(`${p.name} discarded a card and drew a new one.`);
+  drawTo(p,1);
+  afterAction();
+}
+function useSelected(){
+  const card=curP().hand.find(c=>c.id===UI.sel); if(!card) return;
+  if(card.kind==='freeze'){
+    takeCard(card.id);S.discard.push(card);S.freeze+=2;
+    log(`${curP().name} played Freeze. The clock stops for the next 2 ticks.`,'ev');
+    drawTo(curP(),1);afterAction();
+  } else if(card.kind==='swap'){
+    UI.modal={type:'swap1',cardId:card.id};renderGame();
+  }
+}
+function useRole(){
+  const p=curP(); if(!p.role||p.roleUsed) return;
+  const r=p.role;
+  if(r==='engineer'){ p.roleUsed=true;S.playsLeft++; log(`${p.name} (Engineer) will play 2 cards this turn.`,'ev'); }
+  else if(r==='cooler'||r==='tinker'){ UI.pending=r;UI.sel=null; }
+  else if(r==='recycler'){ p.roleUsed=true;S.discard.push(...p.hand);p.hand=[];drawTo(p,S.cfg.hand);UI.sel=null; log(`${p.name} (Recycler) drew a fresh hand.`,'ev'); }
+  else if(r==='surgeon'){ p.roleUsed=true;S.anyColor=true; log(`${p.name} (Surgeon): number cards fit any colour this turn.`,'ev'); }
+  else if(r==='clockmaker'){ p.roleUsed=true;S.freeze+=2; log(`${p.name} (Clockmaker) stopped the clock for 2 ticks.`,'ev'); }
+  renderGame();
+}
+
+/* ---------- game screen ---------- */
+function renderGame(){
+  const p=curP();const cfg=S.cfg;
+  const selCard=p.hand.find(c=>c.id===UI.sel)||null;
+  const pips=Array.from({length:S.goal},(_,i)=>`<i class="${i<S.defused?'on':''}"></i>`).join('');
+  const bombMode=UI.pending||(selCard&&(selCard.kind==='num'||selCard.kind==='wild'));
+  const bombs=S.bombs.map(b=>{
+    let valid=false,dim=false;
+    if(UI.pending){ valid=true; }
+    else if(selCard&&(selCard.kind==='num'||selCard.kind==='wild')){ valid=canPlay(selCard,b); dim=!valid; }
+    return bombHTML(b,{valid,dim,locked:isLocked(b),fresh:S.fresh.includes(b.id)});
+  }).join('');
+  let hint;
+  if(UI.pending==='cooler') hint='<strong>Cooler:</strong> tap a bomb to add 3 to its fuse.';
+  else if(UI.pending==='tinker') hint='<strong>Tinker:</strong> tap a bomb to rewire its colour.';
+  else if(!selCard) hint='Pick a card from your hand.';
+  else if(selCard.kind==='swap') hint='<strong>Swap:</strong> give one of your cards to a teammate and take a random card from them. Press Use card.';
+  else if(selCard.kind==='freeze') hint='<strong>Freeze:</strong> the clock stops for the next 2 ticks. Press Use card.';
+  else {
+    const n=S.bombs.filter(b=>canPlay(selCard,b)).length;
+    hint=n?'Tap a glowing bomb to play this card.':'No bomb takes this card right now. Pick another, or discard it to draw a new one.';
+  }
+  const roleBtn=p.role?`<button class="chip role" data-act="role" ${p.roleUsed?'disabled':''} title="${esc(ROLES[p.role].desc)}">${ROLES[p.role].name}: ${p.roleUsed?'used':esc(ROLES[p.role].desc)}</button>`:'';
+  const showHand=S.phase==='play'&&!S.over;
+  const mates=S.players.map((m,i)=>{
+    if(i===S.cur) return '';
+    const next=i===(S.cur+1)%S.players.length;
+    const hand=cfg.hidden?`<span class="lbl">${m.hand.length} cards</span>`:`<div class="mini-hand">${m.hand.map(c=>cardHTML(c,{mini:true})).join('')}</div>`;
+    const role=m.role?` · ${ROLES[m.role].name}${m.roleUsed?' (used)':''}`:'';
+    return `<div class="mate"><div class="mate-h">${esc(m.name)}<span>${next?'next up':''}${role}</span></div>${hand}</div>`;
+  }).join('');
+
+  app.innerHTML=`
+  <div class="tape"></div>
+  <div class="hud">
+    <div class="hud-brand">DEFUSE</div>
+    <div class="stat"><span class="lbl">Defused</span><div style="display:flex;gap:8px;align-items:center"><div class="pips">${pips}</div><b>${S.defused}/${S.goal}</b></div></div>
+    <div class="stat"><span class="lbl">Turn</span><b>${S.turn}</b></div>
+    <div class="stat"><span class="lbl">Next bomb</span><b>${S.bombs.length>=cfg.max&&S.spawnIn<=1?'waiting':'in '+S.spawnIn}</b></div>
+    <div class="stat"><span class="lbl">Clock</span><b>${S.freeze?'frozen ×'+S.freeze:'running'}</b></div>
+    <div class="hud-btns"><button class="btn" data-act="rules">Rules</button><button class="btn" data-act="guide">Roles &amp; cards</button><button class="btn" data-act="quit">Quit</button></div>
+  </div>
+  ${cfg.silent?'<div class="banner">Silent mode: don’t say the colours or numbers in your hand. You can point at bombs.</div>':''}
+  ${S.event?`<div class="banner event"><b>Event</b> · ${esc(S.event.text)}</div>`:''}
+  <div class="game">
+    <div class="main-col">
+      <section>
+        <div class="section-h"><h2>On the table</h2><span class="chip">${S.bombs.length}/${cfg.max} slots · ${S.deck.length} in deck</span></div>
+        <div class="bombs">${bombs||'<p class="empty-note">No bombs right now.</p>'}</div>
+      </section>
+      <section class="turn">
+        <div class="turn-head"><h2>${esc(p.name)}’s turn</h2><span class="chip">${S.playsLeft} play${S.playsLeft>1?'s':''} left</span>${S.anyColor?'<span class="chip">Any colour</span>':''}${roleBtn}</div>
+        <p class="hint">${showHand?hint:'Waiting for '+esc(p.name)+'.'}</p>
+        <div class="hand">${showHand?p.hand.map(c=>cardHTML(c,{sel:c.id===UI.sel})).join(''):''}</div>
+        <div class="actions">
+          <button class="btn" data-act="discard" ${selCard&&!UI.pending?'':'disabled'}>Discard &amp; draw</button>
+          ${selCard&&(selCard.kind==='swap'||selCard.kind==='freeze')?'<button class="btn" data-act="use" style="border-color:var(--haz)">Use card</button>':''}
+          ${selCard||UI.pending?'<button class="btn" data-act="cancel">Cancel</button>':''}
+        </div>
+      </section>
+    </div>
+    <aside class="side">
+      <section class="team"><div class="lbl">Teammates</div>${mates}</section>
+      <section class="log"><div class="lbl">Bomb log</div><ol>${S.log.map(l=>`<li class="${l.cls}"><span class="tn">T${l.t}</span>${esc(l.text)}</li>`).join('')}</ol></section>
+    </aside>
+  </div>
+  ${overlayHTML()}`;
+}
+
+function overlayHTML(){
+  const p=curP();
+  if(S.over){
+    const w=S.over.win;
+    return `<div class="overlay"><div class="modal big ${w?'win':'lose'}" role="dialog" aria-modal="true">
+      <div class="tape"></div>
+      <h2>${w?'ALL CLEAR':'BOOM'}</h2>
+      <p>${w?`The crew defused ${S.defused} bombs in ${S.turn} turns.`:`${esc(S.over.reason)} The crew defused ${S.defused} of ${S.goal}.`}</p>
+      <div class="row" style="justify-content:center"><button class="btn primary" data-act="again">Play again</button><button class="btn" data-act="quit">Change setup</button></div>
+    </div></div>`;
+  }
+  const m=UI.modal;
+  if(m&&m.type==='rules'){
+    return `<div class="overlay" data-act="close"><div class="modal rules-m" role="dialog" aria-modal="true" data-stop="1">
+      <h2>Rules</h2>${rulesList()}
+      ${S.cfg.actions?'<p><strong>Wild</strong> fits any bomb and you choose its value (1–6). <strong>Swap</strong> trades a card with a teammate. <strong>Freeze</strong> stops the clock for 2 ticks.</p>':''}
+      ${S.cfg.roles?'<p><strong>Roles</strong> can be used once per game, at any point in your turn before your last play. Using a role doesn’t count as a play.</p>':''}
+      <div class="row"><button class="btn" data-act="close">Back to the table</button></div></div></div>`;
+  }
+  if(m&&m.type==='wild'){
+    const b=S.bombs.find(x=>x.id===m.bombId);
+    return `<div class="overlay"><div class="modal" role="dialog" aria-modal="true">
+      <h2>Wild value</h2><p>${cn(b.color)} bomb needs exactly ${b.target-b.total}. Pick a value for the Wild.</p>
+      <div class="row">${[1,2,3,4,5,6].map(v=>`<button class="btn" data-act="wild" data-v="${v}" ${v===b.target-b.total?'style="border-color:var(--good);color:var(--good)"':''}>${v}</button>`).join('')}</div>
+      <div class="row"><button class="btn" data-act="close">Cancel</button></div></div></div>`;
+  }
+  if(m&&m.type==='tinker'){
+    const b=S.bombs.find(x=>x.id===m.bombId);
+    return `<div class="overlay"><div class="modal" role="dialog" aria-modal="true">
+      <h2>Rewire</h2><p>Pick a new colour for the ${cn(b.color).toLowerCase()} ${b.target} bomb.</p>
+      <div class="row">${CKEYS.filter(c=>c!==b.color).map(c=>`<button class="colorbtn" style="background:var(--${c})" data-act="tinker" data-v="${c}" aria-label="${cn(c)}"></button>`).join('')}</div>
+      <div class="row"><button class="btn" data-act="close">Cancel</button></div></div></div>`;
+  }
+  if(m&&m.type==='swap1'){
+    return `<div class="overlay"><div class="modal" role="dialog" aria-modal="true">
+      <h2>Swap with</h2><p>Pick a teammate. You’ll take a random card from their hand.</p>
+      <div class="row">${S.players.map((x,i)=>i===S.cur?'':`<button class="btn" data-act="swapTo" data-v="${i}" ${x.hand.length?'':'disabled'}>${esc(x.name)}</button>`).join('')}</div>
+      <div class="row"><button class="btn" data-act="close">Cancel</button></div></div></div>`;
+  }
+  if(m&&m.type==='swap2'){
+    const others=p.hand.filter(c=>c.id!==m.cardId);
+    return `<div class="overlay"><div class="modal" role="dialog" aria-modal="true">
+      <h2>Give a card</h2><p>Pick the card to hand to ${esc(S.players[m.to].name)}.</p>
+      <div class="row">${others.map(c=>cardHTML(c,{}).replace('data-act="card"','data-act="swapGive"')).join('')}</div>
+      <div class="row"><button class="btn" data-act="close">Cancel</button></div></div></div>`;
+  }
+  if(S.phase==='pass'){
+    return `<div class="overlay"><div class="modal big" role="dialog" aria-modal="true">
+      <div class="tape"></div>
+      <p class="eyebrow" style="margin:0">Turn ${S.turn}</p>
+      <h2>Pass to ${esc(p.name)}</h2>
+      <p>${esc(p.name)}, tap when only you can see the screen.</p>
+      <button class="btn primary" data-act="reveal">I’m ${esc(p.name)}</button></div></div>`;
+  }
+  return '';
+}
+
+/* ---------- guide page ---------- */
+const guideEl=document.getElementById('guide');
+function openGuide(){
+  const roles=Object.keys(ROLES).map(k=>{
+    const r=ROLES[k],g=ROLE_GUIDE[k];
+    return `<article class="gcard">
+      <div class="gcard-h"><span class="badge" aria-hidden="true">${r.name[0]}</span><h3>${r.name}</h3><span class="count">once</span></div>
+      <p class="power">${esc(r.desc)}</p>
+      <p class="when"><b>Use it when:</b> ${esc(g.when)}</p>
+      <p class="when">${esc(g.note)}</p>
+    </article>`;
+  }).join('');
+  const cards=CARD_GUIDE.map(c=>`<article class="gcard">
+      <div class="gcard-h">${cardHTML(c.card,{mini:true})}<h3>${c.name}</h3><span class="count">${c.count} in deck</span></div>
+      <p class="power">${esc(c.power)}</p>
+      <p class="when"><b>Use it when:</b> ${esc(c.when)}</p>
+      <ul class="facts">${c.facts.map(f=>`<li>${esc(f)}</li>`).join('')}</ul>
+    </article>`).join('');
+  guideEl.innerHTML=`<div class="guide-in">
+    <div class="guide-top"><h1>Roles &amp; cards</h1><button class="btn" data-act="guideClose">${S?'Back to the game':'Back to setup'}</button></div>
+    <p class="guide-intro">Everything beyond the basic number cards. Roles, action cards and events are each switched on with their own modifier on the setup screen, so you can add them one at a time as your group learns the game.</p>
+    <section class="gsec">
+      <h2>Roles</h2>
+      <p>With the Roles modifier on, each player gets a random role at the start. Every role works once per game. Using it doesn’t count as your play, so you can use your power and still play a card. Tap your role chip next to your name on your turn.</p>
+      <div class="ggrid">${roles}</div>
+    </section>
+    <section class="gsec">
+      <h2>Action cards</h2>
+      <p>With the Action cards modifier on, 10 special cards are shuffled into the 72 number cards. Pick one from your hand like any other card. Wild goes on a bomb; Swap and Freeze use the <b>Use card</b> button.</p>
+      <div class="ggrid">${cards}</div>
+    </section>
+    <section class="gsec">
+      <h2>Number cards</h2>
+      <div class="ggrid"><article class="gcard">
+        <div class="gcard-h">${cardHTML({kind:'num',color:'green',value:7},{mini:true})}<h3>1 to 9</h3><span class="count">×72 in deck</span></div>
+        <p class="power">Four colours, two copies of each number. Play on a bomb of the same colour to add to its total.</p>
+        <p class="when">Each colour also has a symbol (${CKEYS.map(c=>COLORS[c].sym+' '+COLORS[c].name).join(', ')}) so the game works for colour-blind players.</p>
+      </article></div>
+    </section>
+    <section class="gsec">
+      <h2>Events</h2>
+      <p>With the Event deck on, a twist is flipped every time a new bomb lands. It lasts until the next bomb arrives and is shown in the banner above the table.</p>
+      <ul class="ev-list">${EVENT_GUIDE.map(([n,t])=>`<li><b>${n}</b><span>${t}</span></li>`).join('')}</ul>
+    </section>
+    <button class="btn" data-act="guideClose" style="align-self:flex-start">${S?'Back to the game':'Back to setup'}</button>
+  </div>`;
+  guideEl.hidden=false;guideEl.scrollTop=0;
+  guideEl.querySelector('[data-act="guideClose"]').focus();
+}
+function closeGuide(){ guideEl.hidden=true; guideEl.innerHTML=''; }
+
+/* ---------- input ---------- */
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-act]'); if(!t) return;
+  if(t.dataset.act==='close'&&e.target.closest('[data-stop]')&&!e.target.closest('button')) return;
+  const a=t.dataset.act,v=t.dataset.v,id=Number(t.dataset.id);
+  switch(a){
+    case 'setN': setup.n=Number(v); renderSetup(); break;
+    case 'diff': setup.diff=v; renderSetup(); break;
+    case 'start': startGame(); break;
+    case 'reveal': S.phase='play'; renderGame(); break;
+    case 'card': {
+      if(S.over||S.phase!=='play') return;
+      UI.pending=null; UI.sel=UI.sel===id?null:id; renderGame(); break;
+    }
+    case 'bomb': {
+      if(S.over||S.phase!=='play') return;
+      const b=S.bombs.find(x=>x.id===id); if(!b) return;
+      const p=curP();
+      if(UI.pending==='cooler'){ p.roleUsed=true; b.fuse+=3; UI.pending=null; log(`${p.name} (Cooler) added 3 fuse to the ${cn(b.color).toLowerCase()} bomb.`,'ev'); renderGame(); return; }
+      if(UI.pending==='tinker'){ UI.modal={type:'tinker',bombId:b.id}; renderGame(); return; }
+      const card=p.hand.find(c=>c.id===UI.sel);
+      if(!card||!canPlay(card,b)) return;
+      if(card.kind==='wild'){ UI.modal={type:'wild',cardId:card.id,bombId:b.id}; renderGame(); return; }
+      playOnBomb(card.id,b.id,card.value); break;
+    }
+    case 'wild': playOnBomb(UI.modal.cardId,UI.modal.bombId,Number(v)); break;
+    case 'tinker': {
+      const b=S.bombs.find(x=>x.id===UI.modal.bombId);const p=curP();
+      log(`${p.name} (Tinker) rewired the ${cn(b.color).toLowerCase()} bomb to ${cn(v).toLowerCase()}.`,'ev');
+      b.color=v; p.roleUsed=true; UI.pending=null; UI.modal=null; renderGame(); break;
+    }
+    case 'swapTo': UI.modal={type:'swap2',cardId:UI.modal.cardId,to:Number(v)}; if(curP().hand.length<=1){ doSwap(null); } else renderGame(); break;
+    case 'swapGive': doSwap(id); break;
+    case 'discard': discardSelected(); break;
+    case 'use': useSelected(); break;
+    case 'role': useRole(); break;
+    case 'cancel': UI.sel=null; UI.pending=null; renderGame(); break;
+    case 'rules': UI.modal={type:'rules'}; renderGame(); break;
+    case 'close': UI.modal=null; renderGame(); break;
+    case 'again': { startGame(); break; }
+    case 'guide': openGuide(); break;
+    case 'guideClose': closeGuide(); break;
+    case 'quit': S=null; UI={sel:null,pending:null,modal:null}; renderSetup(); window.scrollTo(0,0); break;
+  }
+});
+function doSwap(giveId){
+  const p=curP();const m=UI.modal;const mate=S.players[m.to];
+  const swapCard=takeCard(m.cardId); S.discard.push(swapCard);
+  const taken=mate.hand.splice(rnd(mate.hand.length),1)[0];
+  if(giveId!=null){ const g=takeCard(giveId); if(g) mate.hand.push(g); }
+  if(taken) p.hand.push(taken);
+  log(`${p.name} swapped a card with ${mate.name}.`,'ev');
+  refill(mate);
+  afterAction();
+}
+document.addEventListener('input',e=>{
+  const n=e.target.dataset&&e.target.dataset.name;
+  if(n!=null) setup.names[Number(n)]=e.target.value;
+});
+document.addEventListener('change',e=>{
+  const k=e.target.dataset&&e.target.dataset.tog;
+  if(k){ setup[k]=e.target.checked; }
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&!guideEl.hidden){ closeGuide(); return; }
+  if(e.key==='Escape'&&S&&!S.over&&(UI.modal||UI.sel||UI.pending)){ UI.modal=null;UI.sel=null;UI.pending=null;renderGame(); }
+});
+
+/* ---------- boot ---------- */
+function start(data){
+  if(data&&data.setup) setup=data.setup;
+  if(data&&data.S){ S=data.S; UI=data.UI||UI; renderGame(); } else renderSetup();
+}
+start({});
+})();
+</script>
+</body>
+</html>
