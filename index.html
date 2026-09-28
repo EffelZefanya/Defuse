@@ -239,6 +239,8 @@ const DIFF={
   normal:{label:'Normal',fuse:12,spawn:4,goal:8,tmin:10,tmax:17,hand:5,max:4},
   nightmare:{label:'Nightmare',fuse:10,spawn:3,goal:10,tmin:12,tmax:20,hand:4,max:5}
 };
+const HAND_BONUS={2:2,3:1}; // extra cards per player for small groups, so the table still covers every colour
+const handSize=(d,n)=>d.hand+(HAND_BONUS[n]||0);
 const ROLES={
   engineer:{name:'Engineer',desc:'Play 2 cards this turn.'},
   cooler:{name:'Cooler',desc:'Add 3 to one bomb’s fuse.'},
@@ -357,7 +359,7 @@ function renderSetup(){
       <div class="seg" role="group" aria-label="Difficulty">
         ${Object.keys(DIFF).map(k=>`<button data-act="diff" data-v="${k}" aria-pressed="${setup.diff===k}">${DIFF[k].label}</button>`).join('')}
       </div>
-      <p class="diff-note">Defuse <b>${d.goal}</b> bombs · fuses start near <b>${d.fuse}</b> · a new bomb every <b>${d.spawn}</b> turns · targets ${d.tmin}–${d.tmax} · ${d.hand} cards in hand</p>
+      <p class="diff-note">Defuse <b>${d.goal}</b> bombs · fuses start near <b>${d.fuse}</b> · a new bomb every <b>${d.spawn}</b> turns · targets ${d.tmin}–${d.tmax} · ${handSize(d,setup.n)} cards in hand</p>
       <div class="lbl">Modifiers</div>
       <div class="toggles">
         ${TOGGLES.map(([k,t,s])=>`<label class="tog" for="tog-${k}"><input type="checkbox" id="tog-${k}" data-tog="${k}" ${setup[k]?'checked':''}><div><b>${t}</b><span>${s}</span></div></label>`).join('')}
@@ -394,6 +396,7 @@ function makeDeck(cfg){
 }
 function startGame(){
   const cfg=Object.assign({},DIFF[setup.diff],{actions:setup.actions,roles:setup.roles,events:setup.events,hidden:setup.hidden,silent:setup.silent,diff:setup.diff});
+  cfg.hand=handSize(cfg,setup.n);
   const roleKeys=shuffle(Object.keys(ROLES));
   S={cfg,deck:makeDeck(cfg),discard:[],bombs:[],bombId:1,defused:0,goal:cfg.goal,turn:1,spawnIn:cfg.spawn,event:null,freeze:0,over:null,log:[],cur:0,playsLeft:1,anyColor:false,fresh:[],
      players:Array.from({length:setup.n},(_,i)=>({name:(setup.names[i]||'').trim()||`Player ${i+1}`,hand:[],role:cfg.roles?roleKeys[i%roleKeys.length]:null,roleUsed:false})),

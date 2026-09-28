@@ -19,6 +19,7 @@ Co-op, pass-and-play card game (2–6 players) in a single self-contained `index
 - Exact hit defuses; overshoot jams (total → 0, fuse −1) unless the Steady hands event is active (card bounces).
 - After each turn every fuse drops by 1 unless the clock is frozen. A new bomb spawns every `spawn` turns while below `max`; each spawn flips an event when the Event deck is on.
 - Bomb fuse = preset fuse + floor((target − tmin) / 3).
+- Hand size = preset hand + `HAND_BONUS` (+2 at 2 players, +1 at 3).
 - Win at `goal` defuses; lose when any fuse hits 0.
 
 ## Design
@@ -29,5 +30,5 @@ Fonts from Google Fonts: Big Shoulders Stencil Display (display), Barlow (body),
 
 - Balance is untested; preset numbers in `DIFF` are first guesses.
 - No "Hard" preset between Normal and Nightmare.
-- Difficulty doesn't scale with player count.
+- Only hand size scales with player count; fuses, spawn rate and goal don't.
 - Possible additions: custom sliders for fuse/spawn/targets, Hanabi-style hint tokens for Silent mode, sound effects, saving settings in localStorage.
